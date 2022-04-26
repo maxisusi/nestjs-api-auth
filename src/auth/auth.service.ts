@@ -34,14 +34,26 @@ export class AuthService {
     }
   }
 
-  signin() {
+  async signin(dto: AuthDto) {
     // * find ther user by email
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email: dto.email,
+      },
+    });
     // * if user doesn not exist throw exception
-
+    if (!user) {
+      throw new ForbiddenException('Crendentials incorrect');
+    }
     // * compare password
-    // * if password incorrect throw exception
+    const pwMatches = await argon.verify(user.hash, dto.password);
 
+    // * if password incorrect throw exception
+    if (!pwMatches) {
+      throw new ForbiddenException('Credentials incorrect');
+    }
     // * send back user
-    return { msg: 'Sign in Service' };
+    delete user.hash;
+    return user;
   }
 }
